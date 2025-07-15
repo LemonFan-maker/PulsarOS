@@ -1,11 +1,11 @@
 [package]
-name = "rust_os_kernel"
+name = "pulsar_os"
 version = "0.1.0"
 
 edition = "2021"
  
 [dependencies]
-# 目前为空
+aarch64-cpu = "9.1.0"
  
 # 添加这个配置来处理 panic
 [profile.dev]
