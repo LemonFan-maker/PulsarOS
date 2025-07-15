@@ -1,0 +1,15 @@
+[package]
+name = "rust_os_kernel"
+version = "0.1.0"
+
+edition = "2021"
+ 
+[dependencies]
+# 目前为空
+ 
+# 添加这个配置来处理 panic
+[profile.dev]
+panic = "abort"
+ 
+[profile.release]
+panic = "abort"
