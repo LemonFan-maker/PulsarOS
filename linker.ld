@@ -1,36 +1,39 @@
+/*
+ * linker.ld for PulsarOS (Polling Version)
+ * This version is simplified and does not handle exception vectors.
+ */
+ 
 ENTRY(_start)
  
 SECTIONS
 {
+    /* 内核的起始加载地址 */
     . = 0x0a000000;
  
+    /* .text 段 (代码) */
     .text : {
-        /* _start 必须是第一条可执行指令 */
-        KEEP(*(.text._start))
-        *(.text .text.*)
+        KEEP(*(.text._start))  /* 确保 _start 函数在最前面 */
+        *(.text .text.*)       /* 所有其他的代码 */
     }
-
+ 
+    /* .rodata 段 (只读数据) */
     .rodata : {
-        . = ALIGN(2048); /* 2048字节对齐 */
-        KEEP(*(.text.boot)) /* 把包含向量表的段放在这里 */
-        . = ALIGN(8); /* 8字节对齐其余的rodata部分 */
         *(.rodata .rodata.*)
     }
-
+ 
+    /* .data 段 (已初始化的可写数据) */
     .data : {
         *(.data .data.*)
     }
-
+ 
+    /* .bss 段 (未初始化的数据) */
     .bss : {
-        _bss_start = .;
         *(.bss .bss.*)
         *(COMMON)
-        _bss_end = .;
     }
-
-    _kernel_end = .;
  
-    /* 预留 64KB 的栈空间 */
-    . = . + 0x10000; /* 64KB */
-    _stack_top = .; /* 定义符号 _stack_top */
+    /* 预留 64KB 的内核栈 */
+    . = ALIGN(16); /* 栈最好是16字节对齐 */
+    . = . + 0x10000; /* 64KB stack size */
+    _stack_top = .;  /* 栈顶地址，供 _start 函数使用 */
 }

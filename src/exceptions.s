@@ -1,26 +1,54 @@
-/* src/exceptions.s */
+/* src/exceptions.s - CORRECT VERSION */
+
+.section ".text._start"
+.global _start
+
+_start:
+    // 1. 设置栈指针
+    // 从链接脚本中加载栈顶地址
+    ldr x0, =_stack_top
+    mov sp, x0
+
+    // 2. 清空 .bss section (可选但推荐)
+    // ldr x0, =_bss_start
+    // ldr x1, =_bss_end
+    // b clear_bss_loop_check
+// clear_bss_loop:
+    // str xzr, [x0], #8
+// clear_bss_loop_check:
+    // cmp x0, x1
+    // b.lt clear_bss_loop
+
+    // 3. 跳转到 Rust 的主函数
+    .extern kernel_main
+    bl kernel_main
+
+    // 4. 如果 rust_main 返回了 (虽然它不应该), 进入死循环
+hang:
+    b hang
+
+
 .section ".text.boot"
 .global _exception_vectors
- 
-// 确保向量表2048字节对齐
-.balign 2048 
+
+.align 11 // 2^11 = 2048-byte alignment
 _exception_vectors:
     // Exception from Current EL with SP_ELx
     b    current_elx_sync     // Synchronous
     b    current_elx_irq      // IRQ (This is our target)
     b    unhandled_exception  // FIQ / SError
     b    unhandled_exception  // Error
- 
+
     // Jump table padding to cover all 16 entries
     .rept 12
         b    unhandled_exception
     .endr
- 
+
 // Our main IRQ handler entry point
 .global current_elx_irq
 current_elx_irq:
-    // 1. Save context (all general-purpose registers and the link register)
-    sub  sp, sp, #256         // Allocate space on the stack (32 regs * 8 bytes)
+    // 1. Save context
+    sub  sp, sp, #256
     stp  x0,  x1,  [sp, #16 * 0]
     stp  x2,  x3,  [sp, #16 * 1]
     stp  x4,  x5,  [sp, #16 * 2]
@@ -36,11 +64,12 @@ current_elx_irq:
     stp  x24, x25, [sp, #16 * 12]
     stp  x26, x27, [sp, #16 * 13]
     stp  x28, x29, [sp, #16 * 14]
-    str  x30,     [sp, #16 * 15] // Save Link Register (x30)
- 
+    str  x30,     [sp, #16 * 15]
+
     // 2. Call the high-level Rust handler
+    .extern handle_irq
     bl   handle_irq
- 
+
     // 3. Restore context
     ldr  x30,     [sp, #16 * 15]
     ldp  x28, x29, [sp, #16 * 14]
@@ -59,15 +88,13 @@ current_elx_irq:
     ldp  x2,  x3,  [sp, #16 * 1]
     ldp  x0,  x1,  [sp, #16 * 0]
     add  sp, sp, #256
- 
+
     // 4. Return from exception
     eret
- 
- 
+
 // A catch-all handler for unexpected exceptions
 .global unhandled_exception
 .global current_elx_sync
 unhandled_exception:
 current_elx_sync:
-    // Simple loop for now. In a real OS, this would print debug info.
     b .
